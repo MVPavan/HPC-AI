@@ -1,0 +1,30 @@
+{
+    "name": "HPC Dev Contianer",
+    "dockerComposeFile": "../docker/compose.hpc_dev.yml",
+    "service": "hpc_dev_service",
+    "workspaceFolder": "/data/CODES/nvidia_manthana/opensource/HPC-AI",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash"
+            },
+            "extensions": [
+				"sugatoray.vscode-git-extension-pack",
+				"franneck94.vscode-python-dev-extension-pack",
+				"franneck94.vscode-c-cpp-dev-extension-pack",
+				"franneck94.vscode-coding-tools-extension-pack",
+				"gruntfuggly.todo-tree",
+				"vscode-icons-team.vscode-icons",
+				"streetsidesoftware.code-spell-checker",
+				"oderwat.indent-rainbow",
+				"mechatroner.rainbow-csv",
+				"moshfeu.compare-folders",
+				"mikestead.dotenv",
+                "ms-vsliveshare.vsliveshare",
+                "NVIDIA.nsight-vscode-edition"
+			]
+        }
+    },
+	"remoteUser": "root",
+    "shutdownAction": "none"
+}

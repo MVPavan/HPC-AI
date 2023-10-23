@@ -1,0 +1,32 @@
+version: '3'
+services:
+  hpc_dev_service:
+    # build:
+    #   context: ./
+    #   dockerfile: hpc_dev.Dockerfile
+    image: hpc_dev:v1
+    container_name: hpc_dev
+    runtime: nvidia
+    network_mode: host
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - type: bind
+        source: ${CODE}
+        target: ${CODE}
+      - type: bind
+        source: ${DATASET}
+        target: ${DATASET}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      stack:
+        soft: 67108864
+        hard: 67108864
+    security_opt:
+      - apparmor:unconfined
+    shm_size: 2g
+    
+    stdin_open: true 
+    tty: true
+
