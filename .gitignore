@@ -1,1 +1,4 @@
 #pass
+*.ipynb
+nvidia_courses/*
+!nvidia_courses/*.gz
