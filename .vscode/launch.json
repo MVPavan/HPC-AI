@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/data/CODES/nvidia_manthana/opensource/HPC-AI",
-      "program": "/data/CODES/nvidia_manthana/opensource/HPC-AI/build/Debug/outDebug",
+      "cwd": "/d/Career/study/HPC-AI",
+      "program": "/d/Career/study/HPC-AI/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

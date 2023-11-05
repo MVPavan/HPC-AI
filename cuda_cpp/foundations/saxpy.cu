@@ -76,7 +76,7 @@ int main()
     asyncErr = cudaDeviceSynchronize();
     if(asyncErr != cudaSuccess) printf("Error: %s\n", cudaGetErrorString(asyncErr));
     
-    // cudaMemPrefetchAsync(c, size, cudaCpuDeviceId);
+    cudaMemPrefetchAsync(c, size, cudaCpuDeviceId);
     // Print out the first and last 5 values of c for a quality check
     for( int i = 0; i < 5; ++i )
         printf("c[%d] = %d, ", i, c[i]);

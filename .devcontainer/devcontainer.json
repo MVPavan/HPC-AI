@@ -2,7 +2,7 @@
     "name": "HPC Dev Contianer",
     "dockerComposeFile": "../docker/compose.hpc_dev.yml",
     "service": "hpc_dev_service",
-    "workspaceFolder": "/data/CODES/nvidia_manthana/opensource/HPC-AI",
+    "workspaceFolder": "/d/Career/study/HPC-AI",
     "customizations": {
         "vscode": {
             "settings": {

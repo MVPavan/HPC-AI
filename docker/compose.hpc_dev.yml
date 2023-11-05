@@ -6,7 +6,6 @@ services:
     #   dockerfile: hpc_dev.Dockerfile
     image: hpc_dev:v1
     container_name: hpc_dev
-    runtime: nvidia
     network_mode: host
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -29,4 +28,14 @@ services:
     
     stdin_open: true 
     tty: true
+    # Forubuntu
+    # runtime: nvidia
+    # Only for wsl
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
