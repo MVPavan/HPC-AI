@@ -4,3 +4,5 @@ nvidia_courses/*
 !nvidia_courses/*.gz
 *.nsys-rep
 *.sqlite
+*.pyc
+**__pycache__**

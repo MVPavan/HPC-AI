@@ -5,16 +5,17 @@ from imports import (
 
 from char_dataset import CharDataset
 
-class BiGramParams(BaseModel):
+class AttParams(BaseModel):
     vocab_size:int
-    embed_dim:int = 32
-    context_length:int = 8
+    embed_dim:int = 384
+    context_length:int = 256
     device:str = 'cuda'
     lr:float = 1e-2
     train_iterations:int = int(1e4)
     val_iterations:int = 200
     val_freq:int = 500
-    batch:int
+    batch:int = 64
+    n_head:int = 3
 
     @field_validator('device')
     @classmethod
@@ -25,11 +26,46 @@ class BiGramParams(BaseModel):
             assert False, 'Unknown Device selection'
         return v
 
-class BiGramModel(nn.Module):
+
+class SelfAttention(nn.Module):
     '''
-    Bi Gram Model
+    Self Attention Model
+    Batch - B
+    Sequence/Context - T
+    Embed Dim - D
+    k,q,v out dim - H
     '''
-    def __init__(self, params:BiGramParams):
+    def __init__(self, params:AttParams):
+        super().__init__()
+        head_dim = params.embed_dim//params.n_head # Such that when n_heads concatenated it -> embed_dim
+        assert head_dim*params.n_head == params.embed_dim, 'Embed dim is proper multiple of num of heads'
+
+        self.wk = nn.Linear(in_features=params.embed_dim, out_features=head_dim, bias=False)
+        self.wq = nn.Linear(in_features=params.embed_dim, out_features=head_dim, bias=False)
+        self.wv = nn.Linear(in_features=params.embed_dim, out_features=head_dim, bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(params.context_length, params.context_length)))
+    
+
+    def forward(self, x:torch.Tensor, mask=False):
+        # X - B,T,D
+        # Out - B,T,H (H = D//n_head)
+        B,T,D = x.shape
+        k,q,v = self.wk(x),self.wq(x),self.wv(x) # B,T,H
+        attention = q@k.transpose(-2,-1)*(k.shape[-1]**-0.5) # q(B,T,H)@k.T(B,H,T)/sqrt(H) -> B,T,T
+        if mask:
+            attention = attention.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
+        # B,T,T matrix, convert rows to prob such that attention@v will have attention weighted v
+        attention = F.softmax(attention, dim=-1)
+        out = attention@v # (B,T,T)@(B,T,H) -> B,T,H
+        return out
+
+        
+
+class Transformer(nn.Module):
+    '''
+    Transformer Model
+    '''
+    def __init__(self, params:AttParams):
         '''
         Vocab size - C
         Embed_dim - D
@@ -80,7 +116,7 @@ class BiGramModel(nn.Module):
 
 
 class Trainer:
-    def __init__(self, model: BiGramModel, dataset:CharDataset, params: BiGramParams):
+    def __init__(self, model: Transformer, dataset:CharDataset, params: AttParams):
         self.model = model
         self.params = params
         self.model.to(self.params.device)
@@ -119,7 +155,7 @@ class Trainer:
 if __name__ == '__main__':
     tiny_shakes = Path(__file__).parent/'./tiny_shakespeare.txt'
     dataset = CharDataset(file_path=tiny_shakes)
-    params = BiGramParams(
+    params = AttParams(
         vocab_size=len(dataset.chars),
         embed_dim=32,
         context_length=8,
@@ -127,11 +163,11 @@ if __name__ == '__main__':
         batch=32,
         # train_iterations=int(1000)
     )
-    model = BiGramModel(params=params)
-    bigram_trainer = Trainer(model=model, dataset=dataset, params=params)
-    bigram_trainer.train()
+    model = Transformer(params=params)
+    trainer = Trainer(model=model, dataset=dataset, params=params)
+    trainer.train()
 
     context = torch.zeros((1, 1), dtype=torch.long, device=params.device)
-    batch_gen = bigram_trainer.model.generate(input=context, max_new_chars=500)
+    batch_gen = trainer.model.generate(input=context, max_new_chars=500)
     for gen in batch_gen.tolist():
         print('----\n',dataset.decode(gen))
