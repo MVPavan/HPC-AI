@@ -5,21 +5,26 @@ from imports import (
 
 from char_dataset import CharDataset
 
+'''
+Exact code fron karapathy's gpt from scratch video
+'''
+
+
 class AttParams(BaseModel):
     vocab_size:int
-    embed_dim:int = 384
-    n_heads:int = 3
+    embed_dim:int = 64
+    n_heads:int = 4
     mlp_hidden_dim:Optional[int] = None
-    n_blocks:int = 6
-    batch:int = 64
-    context_length:int = 256
+    n_blocks:int = 4
+    batch:int = 16
+    context_length:int = 32
     device:str = 'cuda'
-    lr:float = 1e-2
+    lr:float = 1e-3
+    dropout:float = 0.0
     train_iterations:int = int(1e4)
     val_iterations:int = 200
     val_freq:int = 500
     _head_dim:int = 0 # private field
-
 
     @field_validator('device')
     @classmethod
@@ -50,8 +55,9 @@ class AttentionHead(nn.Module):
         self.wq = nn.Linear(in_features=params.embed_dim, out_features=params._head_dim, bias=False)
         self.wv = nn.Linear(in_features=params.embed_dim, out_features=params._head_dim, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(params.context_length, params.context_length)))
-    
-    def forward(self, x:torch.Tensor, mask=False):
+        self.dropout = nn.Dropout(params.dropout)
+
+    def forward(self, x:torch.Tensor, mask=True):
         # X - B,T,D
         # Out - B,T,H (H = D//n_head)
         B,T,D = x.shape
@@ -61,6 +67,7 @@ class AttentionHead(nn.Module):
             attention = attention.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
         # B,T,T matrix, convert rows to prob such that attention@v will have attention weighted v
         attention = F.softmax(attention, dim=-1)
+        attention = self.dropout(attention)
         out = attention@v # (B,T,T)@(B,T,H) -> B,T,H
         return out # B,T,H
 
@@ -70,13 +77,16 @@ class MultiheadAttention(nn.Module):
     '''
     def __init__(self, params: AttParams):
         super().__init__()
+        # TODO: Instead of model list, this can be optimized to run as a single tensor. check GPT2
         self.atthead_list = nn.ModuleList([AttentionHead(params) for _ in range(params.n_heads)])
         self.project = nn.Linear(in_features=params._head_dim*params.n_heads, out_features=params.embed_dim)
+        self.dropout = nn.Dropout(params.dropout)
     
     def forward(self, x):
         # X - B,T,D
         out = torch.cat([atthead(x) for atthead in self.atthead_list], dim=-1) # B,T,D
         out = self.project(out)  # B,T,D
+        out = self.dropout(out)
         return out  # B,T,D
     
 
@@ -90,7 +100,8 @@ class FeedForward(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(in_features=params.embed_dim, out_features=factor*params.embed_dim),
             nn.ReLU(),
-            nn.Linear(in_features=factor*params.embed_dim, out_features=params.embed_dim)
+            nn.Linear(in_features=factor*params.embed_dim, out_features=params.embed_dim),
+            nn.Dropout(params.dropout)
         )
     
     def forward(self, x):
@@ -224,12 +235,11 @@ if __name__ == '__main__':
     params = AttParams(vocab_size=len(dataset.chars))
     model = GPT(params=params)
     x,y = dataset.get_batch(context_length=params.context_length, batch=params.batch)
-    x, y = x.to(params.device), y.to(params.device)
     model_summary = summary(model=model,input_data=(x,y))
-    # trainer = Trainer(model=model, dataset=dataset, params=params)
-    # trainer.train()
+    trainer = Trainer(model=model, dataset=dataset, params=params)
+    trainer.train()
 
-    # context = torch.zeros((1, 1), dtype=torch.long, device=params.device)
-    # batch_gen = trainer.model.generate(input=context, max_new_chars=500)
-    # for gen in batch_gen.tolist():
-    #     print('----\n',dataset.decode(gen))
+    context = torch.zeros((1, 1), dtype=torch.long, device=params.device)
+    batch_gen = trainer.model.generate(input=context, max_new_chars=500)
+    for gen in batch_gen.tolist():
+        print('----\n',dataset.decode(gen))
