@@ -5,9 +5,11 @@ from pydantic import (
     ValidationError,
     ValidationInfo,
     field_validator,
+    dataclasses
 )
 import math
 import inspect
+from enum import Enum
 
 import torch
 import torch.nn as nn
