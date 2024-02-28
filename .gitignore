@@ -6,3 +6,5 @@ nvidia_courses/*
 *.sqlite
 *.pyc
 **__pycache__**
+**/nanoGPT*
+**/lit-gpt*

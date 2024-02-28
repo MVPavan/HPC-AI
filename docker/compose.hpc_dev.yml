@@ -13,6 +13,9 @@ services:
         source: ${CODE}
         target: ${CODE}
       - type: bind
+        source: ${CONDA}
+        target: ${CONDA}
+      - type: bind
         source: ${DATASET}
         target: ${DATASET}
     ulimits:

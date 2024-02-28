@@ -10,6 +10,7 @@ from pydantic import (
 import math
 import inspect
 from enum import Enum
+from omegaconf import OmegaConf
 
 import torch
 import torch.nn as nn
